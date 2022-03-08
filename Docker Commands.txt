@@ -1,0 +1,111 @@
+
+docker images																	# list of images
+docker rm <cnt_id>															# remove container
+docker rmi <img_id>														# remove image (if a container is linked, first remove the container or use --force)
+docker ps -a																		# list of running containers (-a: and stopped containers)
+docker pull <img_name>												# pulls image from repository; it is actually a shortcut for 	docker pull docker.io/library/<img_name>
+
+# creates a new container from an image (if missing image, it pulls it)
+
+docker run -d \																	# -d: detach mode
+	--name <alias> \															# gives an alias to container
+	-p<host_port>:<cnt_port> \											# binds host port to container port (ex. docker run -p6000:6379 redis)
+	-e <ENV_VAR_NAME>=<value> \							# specifies env variables
+	--net <net_name>															# connects to specified docker network
+	-v <ref_name>:<cnt_folder_path> \							# mounts specified volume on the container: accessible by ref_name
+	<img_name/cnt_id>
+
+# example running mongo-express and connecting to container named mongodb
+# in the browser, go to		localhost:8081		to view the application
+
+docker run -d \
+> -p8081:8081 \
+> -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \				# from docker run - e MONGO_INITDB_ROOT_USERNAME=admin mongo
+> -e ME_CONFIG_MONGODB_ADMINPASSWORD=password \			# from docker run - e MONGO_INITDB_ROOT_PASSWORD=password mongo
+> --net mongo-network \
+> --name mongo-express \
+> -e ME_CONFIG_MONGODB_SERVER=mongodb \								# from docker run --name mongodb mongo
+> mongo-express
+
+
+docker stop <cnt_id>														# stops running container
+docker start <cnt_id>														# restarts stopped container; retains all attributes specified during creation
+docker logs <cnt_id/cnt_name>	 -f									# shows container logs; -f: streams the logs
+docker exec -it <cnt_id/cnt_name> /bin/bash				# goes into container terminal; digit 'exit' to return to host terminal; use /bin/sh if you get "oci runtime error"
+docker network ls																# list of docker networks
+docker network create <net_name>								# creates new docker network
+
+
+DOCKER COMPOSE
+
+docker run command																mongo-docker-compose.yaml
+
+																									version: '3'
+docker run -d \																				services:
+--name mongodb \																			mongodb:
+-p 27017:27017 \																					image: mongo
+-e MONGO-INITDB_ROOT_USERNAME=admin \						ports:
+-e MONGO-INITDB_ROOT_PASSWORD=password \					- 27017:27017
+--net mongo-network \																			environment:
+mongo																										- MONGO-INITDB_ROOT_USERNAME=admin
+																													- MONGO-INITDB_ROOT_PASSWORD=password \
+																												volumes:
+																													- mydb-data:/var/lib/my_sql/data
+																											mongo-express:
+																												image: mongo-express
+																												ports:.....
+																										volumes:											# list of all defined volumes
+																											mydb-data:									# name_ref
+																												driver: local								# host
+
+Docker compose takes care of creating a common network for all specified containers
+
+docker-compose -f docker-compose.yaml up						# starts all containers (with their attributes) specified in the file
+docker-compose -f docker-compose.yaml down				# stops all containers specified in the file, and the network
+
+
+DOCKERFILE
+
+Image Environment Blueprint												Dockerfile	(always to be called Dockerfile)
+
+
+install node																				FROM node															# always starts from another image, as base (in this case node image)
+
+set MONGO_DB_USERNAME=admin								ENV MONGO_DB_USERNAME=admin \		# optional: will be overwritten if specifeid in docker-compose file
+set MONGO_DB_PWD=password												MONGO_DB_PWD=password
+
+create /home/app folder															RUN mkdir -p /home/app									# executes any linux command; the dir will be saved inside the container
+
+copy current folder files to /home/app									COPY . /home/app												# different from RUN beacuse it is executed on the host, outside the container; it copies files on the host, into the container image
+
+start the app with: "node server.js"										CMD ["node", "server.js"]									# different from RUN beacause it is an entry point command (only one is possible, whereas we can have multiple RUN commands)
+																																													# ENTRYPOINT ["file_name.sh"] to execute an entire script as entry point
+
+
+# if Dockerfile is modified, another build is required
+
+docker build -t <new_image_name>:<tag> <Dockerfile location>
+
+# example
+
+docker build -t my-app:v1.0 .			# . means current directory (location of Dockerfile in this example)
+
+
+# We have one repo for all the versions of a single image
+# To push an image to a private repo:
+
+docker login				# might differ depending on the repo platform
+
+# If, for example, the repo is on aws, select the repo in the browser and check push commands (need AWS Cli installed and Credentials configured)
+# By default	'docker push <img_name>'	would push to DockerHub
+# To push to a private one, first add tag to image (rename) to include repo domain or address in the name
+
+docker tag my-app:1.0 <fullDomainRegistry>/my-app:1.0
+
+docker push <new_img_name>			# pushes to private repo
+
+
+# To deploy an image from a private repo:
+# First login, then docker-compose, making sure that the image we want has the full domain registry as name
+
+

@@ -1,0 +1,61 @@
+
+DOCKER SWARM
+
+sudo apt install virtualbox-qt
+
+docker-machine create --driver virtualbox manager1
+
+# To see how to connect your docker client to a the docker engine running on
+# this virtual machine:
+
+docker-machine env manager1		# lists environment variables of manager1
+
+docker-machine ls							# list of machines
+docker-machine ip <name>			# display machine ip
+
+docker-machine ssh manager1		# connects to manager1 machine
+ 
+docker-machine ssh worker1		# connects to worker1 machine
+
+ 
+ # Inside MANAGER machine:
+ 
+	docker swarm init --advertise-addr <machine_ip>
+
+	docker node ls									# lists nodes; it only works inside a swarm manager
+
+	docker swarm join-token worker	# gives you the command to launch inside a worker machine, to join this swarm
+
+	docker info										# shows various details, including ones about the swarm
+
+	docker swarm									# shows available docker swarm commands
+
+	docker service create --replicas 3 -p 80:80 --name <my_service_name> <img_name>			# creates a service that will run on 3 nodes (of the swarm) 
+	docker service create --replicas 3 -p 80:80 --name service1 nginx
+	
+	docker service ls								# shows list of services in the swarm; on the browser you can go to the ip shown here to "see" the running service
+	
+	docker service ps <service_name>			# shows info and state of the service in every machine where it is running / going to run
+
+	docker service scale service1=5				# scales the service and runs it on the specified number of instances (i.e. containers); if there are not enough machines, it will be run in the same machine in more than one instance
+	
+	docker node inspect worker1						# shows details of the specified node (even itself); only works on swarm manager node
+
+	docker service update --image nginx:1.14.0 service1		# updates service1 on every instances (the "older version" will not be removed, but will remain inactive)
+	
+	docker node update --availability drain worker1					# change worker1 status to "drain" (shut down)
+	
+	docker service rm service1							# shuts down service1
+	
+# Inside WORKER machine
+
+		docker swarm leave				# the node leaves the swarm
+
+_______
+
+# Outside the nodes:
+
+docker-machine stop worker1		# stops worker1 machine
+
+docker-machine rm worker1			# removes worker1 machine
+

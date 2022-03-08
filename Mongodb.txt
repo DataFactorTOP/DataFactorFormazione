@@ -1,0 +1,124 @@
+
+MONGODB
+
+It's a Document Database
+Documents are in JSON (JavaScript Object Notation) format
+	{
+		"key": value
+	}
+A schema is not required: no need to define data types ahead of time
+Data is stored in BSON (extension of JSON) format
+
+
+# login to MongoDB Atlas (https://cloud.mongodb.com/v2/6222260be487381a4b84b2ef#security/database/users),
+# create database, users (user1) and network (77.39.130.97/32 current IP), install mongo shell
+
+
+mongosh "mongodb+srv://cluster0.ekdxh.mongodb.net/myFirstDatabase" --apiVersion 1 --username user1
+!pass1!890
+
+# NB: if connection with current IP fails, try adding again the current IP to the whitelist of accepted IP addresses (in Network Access inside Mongo Atlas) 
+
+db									# shows db you are connected to
+show dbs						# shows currently populated dbs
+use <db_name>			# switches (creates if needed) to specified db
+
+# It is also possible to connect via Compass, the GUI for MongoDB
+# It is also possible to connect via VisualStudio (install mongodb extension, the leaf); connection string is the same as Compass
+
+# The DataBase is actually created when we start to populate it
+
+db.createCollection("posts")			# creates a new collection named posts
+
+# in the collection 'posts' (it creates  the collection if it doesn't exist) inserts the specified object
+
+db.posts.insertOne({
+		title: 'Post 1',
+		body: 'Body of post.',
+		category: 'News',
+		likes: 1,
+		tags: ['news', 'events'],
+		date: Date()
+})
+
+# insert multiple objects:
+
+db.posts.insertMany([
+		<object1>,
+		<object2>,
+		<object3>,
+		<object4>
+])
+
+
+# lists all the objects in collection:
+
+db.posts.find()
+
+# find by specified filter:
+
+db.posts.find({<key>: <value>})
+
+# find and sort (1 ascending, -1 descending order)
+
+db.posts-find().sort({<key>: 1})
+
+# other methods:
+
+.count(), .limit(<number_of_desired_records>)
+
+# find first occurrence with desired filter:
+
+db.posts.findOne({likes: {$gt: 3}})				# filter: field 'likes' > 3
+
+# update desired object:
+
+db.posts.updateOne({title: "Post 1"}, {$set: {category: "Tech"}})
+
+# update if found, insert if not found:
+
+db.posts.updateOne({title: "Post 6"}, 
+		{$set: {
+			title: "Post 6",
+				body: "Body of post.",
+				category: "News"}},
+		{ upsert: true })
+
+
+# increment "Post 1" "likes" field by 2:
+
+db.posts.updateOne({title: "Post 1"}, {
+		$inc: {
+			likes: 2} })
+
+# increments multiple objects ({} = no filter = all):
+
+db.posts.updateMany({}, {
+		$inc: {
+			likes: 2} })
+
+
+# delete:
+
+db.posts.deleteOne({title: "Post 6"})
+
+db.posts.deleteMany({category: "Tech"})
+
+
+# In the browser, in MongoDB Atlas, "browse collections" lets you do crud via GUI
+
+
+# drop collection:
+
+db.posts.drop()
+
+
+
+
+# To import a file into a db, from shell (not mongo shell), in Mongo Atlas, section Cmd Line Tools copy the string related to import and use as uri, changing password and db fields
+# When importing, make sure the collection exists to avoid errors
+
+mongoimport --uri <uri> --collection my_other_tweets --type csv --headerline --file <filename>
+
+# ex
+mongoimport --uri 'mongodb+srv://user1:!pass1!890@cluster0.ekdxh.mongodb.net/my_blog' --collection my_other_tweets --type csv --headerline --file Downloads/prezzi_carburanti_sett.csv
